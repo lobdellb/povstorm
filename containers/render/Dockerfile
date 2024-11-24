@@ -19,7 +19,7 @@ RUN ./prebuild.sh
 
 WORKDIR /app/povray-3.7.0.10/
 
-RUN ./configure COMPILED_BY="Bryce Lobdell lobdellb@gmail.com"
+RUN ./configure COMPILED_BY="POVStorm"
 
 RUN make
 
@@ -29,25 +29,10 @@ RUN make install
 WORKDIR /app/
 
 
-# Copy the requirements file into the container at /app
 COPY requirements.txt ./
 
-# Install any needed packages specified in requirements.txt
 RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
-# Copy the rest of the application code into the container at /app
 copy main.py .
-
-#RUN chmod a+x /app/povray
-
-# Expose port 80 to the outside world
-#EXPOSE 80
-
-# Define environment variable
-#ENV APP_ENV=dev
-
-# Run app.py when the container launches
-# CMD ["povray"]
-# CMD ["python", "/app/go.py"]
 
 CMD exec gunicorn --bind :8080 --workers 1 --threads 8 --timeout 0 main:app
