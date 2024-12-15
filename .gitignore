@@ -11,6 +11,12 @@
 *.zip
 
 
+*/.terraform/*
+.terraform*
+env
+*blobdell*
+*tfstate*
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

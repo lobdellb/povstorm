@@ -6,23 +6,28 @@
 # Todo: 
 # - labels
 # - add linter
-# - set the resource names to be unique
-# - add project to every resource
-
 
 # Locals
 locals {
-  service_sa_iam_roles = [ "role/logging.logWriter"]
+  service_sa_iam_roles = [ "roles/logging.logWriter"]
+
+  default_labels = {
+    application  = var.povstorm_namespace
+  }
+
+  all_labels = merge( var.user_labels , local.default_labels )
+
+  render_service_image_name = "${var.target_gcp_region}-docker.pkg.dev/${var.target_gcp_project_id}/${var.povstorm_namespace}-${var.render_service_docker_tag_postfix}:latest"
+
 }
 
 # PubSub for inbound render requests
 
 resource "google_pubsub_topic" "inbound_topic" {
   name = "${var.povstorm_namespace}-inbound-topic"
+  project = var.target_gcp_project_id
 
-  labels = {
-    foo = "bar"
-  }
+  labels = local.all_labels
 
   message_retention_duration = "86600s"  # Is this an okay default?
 }
@@ -33,10 +38,9 @@ resource "google_pubsub_topic" "inbound_topic" {
 
 resource "google_pubsub_topic" "outbound_topic" {
   name = "${var.povstorm_namespace}-outbound-topic"
+  project = var.target_gcp_project_id
 
-  labels = {
-    foo = "bar"
-  }
+  labels = local.all_labels
 
   message_retention_duration = "86600s"  # Is this an okay default?
 }
@@ -51,18 +55,26 @@ resource "google_pubsub_topic" "outbound_topic" {
 
 resource "google_cloud_run_v2_service" "render_service" {
   name     = "${var.povstorm_namespace}-render-service"
+  project = var.target_gcp_project_id
   location = var.target_gcp_region
   deletion_protection = false
   ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 
+
+
   template {
+
+    service_account = google_service_account.services_identity.email 
 
     scaling {
       max_instance_count = var.render_service_max_instance_count
+      min_instance_count = 0
     }
 
+    max_instance_request_concurrency = 2 # default to 80. Might be faster with 1 or 4, not sure.
+
     containers {
-      image = var.render_service_docker_tag
+      image = data.google_artifact_registry_docker_image.push_render_container_image.self_link
       resources {
         limits = {
           cpu    = var.render_service_cpus
@@ -70,6 +82,7 @@ resource "google_cloud_run_v2_service" "render_service" {
         }
 
         startup_cpu_boost = true
+        cpu_idle = true # Shut down all containers when not runnings
 
       }
 
@@ -90,12 +103,15 @@ resource "google_cloud_run_v2_service" "render_service" {
     }
 
   }
+
+  labels = local.all_labels
+
+  depends_on = [ data.google_artifact_registry_docker_image.push_render_container_image ]
+
 }
 
 
 # Cloud Run service for stiching the frames together
-
-
 # resource "google_cloud_run_v2_service" "stich_service" {
 #   name     = "cloudrun-service"
 #   location = "us-central1"
@@ -122,11 +138,22 @@ resource "google_cloud_run_v2_service" "render_service" {
 resource "google_storage_bucket" "work_bucket" {
 
   name          = "${var.povstorm_namespace}-work"
+  project = var.target_gcp_project_id
   location      = var.target_gcp_region
   storage_class = "REGIONAL"
-  force_destroy = false
+  force_destroy = true
 
   uniform_bucket_level_access = true
+
+  versioning {
+    enabled = true  # This is so we can use a gcs file as a distributed lock.
+  }
+
+  labels = local.all_labels
+
+  # This seems to come with soft delete enabled. I tried changing the soft delete setting in the console
+  # and terraform didn't seem to notice something had changed so "soft delete" may not be supported by
+  # Terraform just yet. The default retention before actual deletion is 7 days which is reasonable. 
 
 }
 
@@ -135,7 +162,9 @@ resource "google_storage_bucket" "work_bucket" {
 
 resource "google_service_account" "services_identity" {
   account_id   = "${var.povstorm_namespace}-service-sa"
+  project = var.target_gcp_project_id
   display_name = "${var.povstorm_namespace} - service identity"
+
 }
 
 
@@ -156,7 +185,7 @@ resource "google_storage_bucket_iam_member" "services_identity_permissions" {
 
 resource "google_project_iam_member" "project" {
 
-  for_each = set()
+  for_each = toset(local.service_sa_iam_roles)
 
   project = var.target_gcp_project_id
   role    = each.key
@@ -171,10 +200,13 @@ resource "google_project_iam_member" "project" {
 # Place to put the container images.
 
 resource "google_artifact_registry_repository" "container_registry" {
-  location      = "us-central1"
-  repository_id = "my-repository"
-  description   = "example docker repository"
+  location      = var.target_gcp_region
+  project = var.target_gcp_project_id
+  repository_id = "${var.povstorm_namespace}-repository"
+  description   = "${var.povstorm_namespace}-Repository for the render and stitch service containers."
   format        = "DOCKER"
+
+  labels = local.all_labels
 }
 
 
@@ -183,6 +215,7 @@ resource "google_artifact_registry_repository" "container_registry" {
 
 resource "google_eventarc_trigger" "inbound_trigger" {
     name = "${var.povstorm_namespace}-trigger"
+    project = var.target_gcp_project_id
     location = var.target_gcp_region
 
     matching_criteria {
@@ -192,23 +225,36 @@ resource "google_eventarc_trigger" "inbound_trigger" {
 
     destination {
         cloud_run_service {
-            service = google_cloud_run_service.default.name
+            service = google_cloud_run_v2_service.render_service.name
             region = var.target_gcp_region
         }
     }
-    labels = {
-        foo = "bar"
-    }
+    labels = local.all_labels
 }
 
 
 
-# resource "null_resource" "push_render_container_image" {
-#   provisioner "local-exec" {
-#     command = <<EOT
-#     gcloud auth configure-docker us-central1-docker.pkg.dev &&
-#     docker build -t us-central1-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.my_repo.name}/my-image:tag . &&
-#     docker push us-central1-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.my_repo.name}/my-image:tag
-#     EOT
-#   }
-# }
+resource "null_resource" "push_render_container_image" {
+
+  # must already be done by the person running terraform apply: gcloud auth configure-docker us-central1-docker.pkg.dev &&
+  # docker build -t us-central1-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.my_repo.name}/my-image:tag . &&
+  # docker push us-central1-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.my_repo.name}/my-image:tag
+
+  provisioner "local-exec" {
+    command = <<EOT
+docker push ${local.render_service_image_name}
+EOT
+
+  }
+}
+
+
+
+
+data "google_artifact_registry_docker_image" "push_render_container_image" {
+  location      = var.target_gcp_region
+  repository_id = google_artifact_registry_repository.container_registry.repository_id
+  image_name = var.render_service_docker_tag
+  project = var.target_gcp_project_id
+  depends_on = [ null_resource.push_render_container_image ]
+}

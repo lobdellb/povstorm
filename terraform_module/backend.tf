@@ -2,12 +2,17 @@
 
 terraform {
   
-  required_version = ">= 0.14"  # Do I need to test that this works with all verions, or leave this for the most recent version?
+  required_version = ">= 1.9.8"  
 
-  "google" = {
 
-    source = "hashicorp/google"
-    version = "~> 3.0"
+  required_providers {
+
+    google = {
+
+      source = "hashicorp/google"
+      version = "~> 6.12"
+
+    }
 
   }
 

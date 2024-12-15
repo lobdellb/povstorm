@@ -26,14 +26,14 @@ variable "povstorm_namespace" {
 variable "render_service_cpus" {
   description = "The number of CPUs afforded to the render service."
   type    = string
-  default = "1000m"
+  default = "1"
 }
 
 
 variable "render_service_ram" {
   description = "The amount of RAM afforded to the render service."
   type    = string
-  default = "1Gi"
+  default = "1024Mi"
 }
 
 
@@ -68,4 +68,12 @@ variable "user_labels" {
   description = "Any GCP labels the user wishes to apply to all created resources."
   type = map(string)
   default = {}
+
+  
+}
+
+variable "target_gcp_region" {
+  description = "GCP region where all resources are spawned."
+  type    = string
+  default = "us-central1"
 }

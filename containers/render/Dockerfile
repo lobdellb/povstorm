@@ -33,6 +33,6 @@ COPY requirements.txt ./
 
 RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
-copy main.py .
+COPY ./src/* .
 
 CMD exec gunicorn --bind :8080 --workers 1 --threads 8 --timeout 0 main:app

@@ -14,8 +14,10 @@ import shutil
 import google.cloud.logging
 
 
+GCP_PROJECT = os.environment["GCP_PROJECT"]
+
 # Instantiates a client
-client = google.cloud.logging.Client()
+client = google.cloud.logging.Client(project=GCP_PROJECT)
 
 # Retrieves a Cloud Logging handler based on the environment
 # you're running in and integrates the handler with the
