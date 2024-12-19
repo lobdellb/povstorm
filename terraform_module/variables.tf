@@ -33,7 +33,7 @@ variable "render_service_cpus" {
 variable "render_service_ram" {
   description = "The amount of RAM afforded to the render service."
   type    = string
-  default = "1Gi"
+  default = "1024Mi"
 }
 
 
@@ -53,7 +53,7 @@ variable "render_service_max_instance_count" {
 }
 
 
-variable "stitch_service_docker_tag" {
+variable "stitch_service_docker_tag_postfix" {
   description = "The docker tag of the stitch service container."
   type    = string
 }

@@ -26,7 +26,7 @@ variable "povstorm_namespace" {
 variable "render_service_cpus" {
   description = "The number of CPUs afforded to the render service."
   type    = string
-  default = "1"
+  default = "1000m"
 }
 
 
@@ -53,7 +53,7 @@ variable "render_service_max_instance_count" {
 }
 
 
-variable "stitch_service_docker_tag" {
+variable "stitch_service_docker_tag_postfix" {
   description = "The docker tag of the stitch service container."
   type    = string
 }
@@ -70,10 +70,4 @@ variable "user_labels" {
   default = {}
 
   
-}
-
-variable "target_gcp_region" {
-  description = "GCP region where all resources are spawned."
-  type    = string
-  default = "us-central1"
 }

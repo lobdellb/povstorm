@@ -17,9 +17,11 @@ locals {
 
   all_labels = merge( var.user_labels , local.default_labels )
 
-  render_service_image_name = "${var.target_gcp_region}-docker.pkg.dev/${var.target_gcp_project_id}/${var.povstorm_namespace}-${var.render_service_docker_tag_postfix}:latest"
+  render_service_image_name = "${var.target_gcp_region}-docker.pkg.dev/${var.target_gcp_project_id}/${var.povstorm_namespace}-repository/${var.render_service_docker_tag_postfix}:latest"
 
 }
+
+
 
 # PubSub for inbound render requests
 
@@ -74,7 +76,7 @@ resource "google_cloud_run_v2_service" "render_service" {
     max_instance_request_concurrency = 2 # default to 80. Might be faster with 1 or 4, not sure.
 
     containers {
-      image = data.google_artifact_registry_docker_image.push_render_container_image.self_link
+      image = local.render_service_image_name
       resources {
         limits = {
           cpu    = var.render_service_cpus
@@ -106,7 +108,7 @@ resource "google_cloud_run_v2_service" "render_service" {
 
   labels = local.all_labels
 
-  depends_on = [ data.google_artifact_registry_docker_image.push_render_container_image ]
+  depends_on = [ null_resource.push_render_container_image ]
 
 }
 
@@ -183,7 +185,7 @@ resource "google_storage_bucket_iam_member" "services_identity_permissions" {
 
 
 
-resource "google_project_iam_member" "project" {
+resource "google_project_iam_member" "project_service_identy_access" {
 
   for_each = toset(local.service_sa_iam_roles)
 
@@ -233,7 +235,7 @@ resource "google_eventarc_trigger" "inbound_trigger" {
 }
 
 
-
+# will need:  gcloud auth configure-docker us-central1-docker.pkg.dev
 resource "null_resource" "push_render_container_image" {
 
   # must already be done by the person running terraform apply: gcloud auth configure-docker us-central1-docker.pkg.dev &&
@@ -246,15 +248,27 @@ docker push ${local.render_service_image_name}
 EOT
 
   }
+
+  depends_on = [ google_artifact_registry_repository.container_registry ]
 }
 
 
 
+# I don't think we need this:
 
-data "google_artifact_registry_docker_image" "push_render_container_image" {
-  location      = var.target_gcp_region
-  repository_id = google_artifact_registry_repository.container_registry.repository_id
-  image_name = var.render_service_docker_tag
-  project = var.target_gcp_project_id
-  depends_on = [ null_resource.push_render_container_image ]
-}
+# $${TF_VAR_target_gcp_region}-docker.pkg.dev/$${TF_VAR_target_gcp_project_id}/$${TF_VAR_render_service_docker_tag_postfix}:latest 
+# data "google_artifact_registry_docker_image" "push_render_container_image" {
+#   location      = var.target_gcp_region
+#   repository_id = google_artifact_registry_repository.container_registry.repository_id
+#   image_name = var.render_service_docker_tag
+#   project = var.target_gcp_project_id
+#   # depends_on = [ null_resource.push_render_container_image ]
+# }
+
+
+
+
+
+
+
+

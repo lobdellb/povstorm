@@ -31,3 +31,43 @@
 
 # povstorm
 Render POVRAY SDL to  images, then video in GCP Cloud Run.
+
+
+
+
+# Piece of the terraform module and their exposed paramters
+
+* google_pubsub_topic - inbound
+    * povstorm_namespace
+* google_pubsub_topic - outbound
+    * povstorm_namespace
+* google_cloud_run_v2_service - render
+    * povstorm_namespace
+    * target_gcp_project_id
+    * target_gcp_region
+    * render_service_max_instance_count
+    * render_service_cpus
+    * render_service_ram
+* google_storage_bucket - work bucket
+    * povstorm_namespace
+    * target_gcp_project_id
+    * target_gcp_region
+* google_service_account - service(s) identity
+    * povstorm_namespace
+    * target_gcp_project_id
+    * povstorm_namespace
+* google_storage_bucket_iam_member - bucket access
+* google_project_iam_member - services identity roles
+    * target_gcp_project_id
+* google_artifact_registry_repository 
+    * target_gcp_region
+    * target_gcp_project_id
+    * povstorm_namespace
+* google_eventarc_trigger
+    * povstorm_namespace
+    * target_gcp_project_id
+    * target_gcp_region
+* google_artifact_registry_docker_image
+    * target_gcp_region
+
+*google_artifact_registry_docker_image
