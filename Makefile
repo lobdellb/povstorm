@@ -41,7 +41,8 @@ create_python_env:
 build_tag_render_service: create_python_env
 	echo "Building the render service container..."
 	. ${ENV_NAME}/bin/activate; python -c "from src.utils import tfvars_to_env;tfvars_to_env('./terraform/blobdell-povstorm.tfvars')" > this_env
-	. ./this_env && docker build ./containers/render --tag $${TF_VAR_target_gcp_region}-docker.pkg.dev/$${TF_VAR_target_gcp_project_id}/$${TF_VAR_povstorm_namespace}-repository/$${TF_VAR_render_service_docker_tag_postfix}:latest 
+	. ./this_env && docker build ./containers/render --tag $${TF_VAR_target_gcp_region}-docker.pkg.dev/$${TF_VAR_target_gcp_project_id}/$${TF_VAR_povstorm_namespace}-repository/$${TF_VAR_render_service_docker_tag_postfix}
+	#. ./this_env && docker inspect --format='{{index .RepoDigests 0}}' $${TF_VAR_target_gcp_region}-docker.pkg.dev/$${TF_VAR_target_gcp_project_id}/$${TF_VAR_povstorm_namespace}-repository/$${TF_VAR_render_service_docker_tag_postfix} > latest_render_container_hash
 	#. ./this_env && docker push $${TF_VAR_target_gcp_region}-docker.pkg.dev/$${TF_VAR_target_gcp_project_id}/$${TF_VAR_povstorm_namespace}/$${TF_VAR_render_service_docker_tag_postfix}:latest 
 
 

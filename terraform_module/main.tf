@@ -17,8 +17,13 @@ locals {
 
   all_labels = merge( var.user_labels , local.default_labels )
 
-  render_service_image_name = "${var.target_gcp_region}-docker.pkg.dev/${var.target_gcp_project_id}/${var.povstorm_namespace}-repository/${var.render_service_docker_tag_postfix}:latest"
+  render_service_image_name = "${var.target_gcp_region}-docker.pkg.dev/${var.target_gcp_project_id}/${var.povstorm_namespace}-repository/${var.render_service_docker_tag_postfix}"
 
+  mount_name = "work-bucket"
+
+  render_service_tag = formatdate("YYYYMMDDhhmmdd")
+
+  render_service_image_name_and_tag = "${local.render_service_image_name}:${local.render_service_tag}"
 }
 
 
@@ -91,13 +96,27 @@ resource "google_cloud_run_v2_service" "render_service" {
       # ports {
       #   container_port = 8080
       # }
-    }
+      env {
+        name = "MOUNT_PATH"
+        value = "/mnt/${local.mount_name}"
+      }
 
+      env {
+        name = "GCP_PROJECT" 
+        value = var.target_gcp_project_id
+      }
+
+      volume_mounts {
+        name       = local.mount_name
+        mount_path = "/mnt/${local.mount_name}"
+      }
+
+    }
 
     timeout = var.render_service_timeout
 
     volumes {
-      name = "work-bucket"
+      name = local.mount_name
       gcs {
         bucket    = google_storage_bucket.work_bucket.name
         read_only = false
@@ -229,10 +248,19 @@ resource "google_eventarc_trigger" "inbound_trigger" {
         cloud_run_service {
             service = google_cloud_run_v2_service.render_service.name
             region = var.target_gcp_region
+            path = "/process_workunit"
         }
     }
     labels = local.all_labels
 }
+
+
+
+data "terraform_local_file" "my_file" {
+  filename = "../latest_render_container_hash" 
+}
+
+
 
 
 # will need:  gcloud auth configure-docker us-central1-docker.pkg.dev
@@ -242,11 +270,15 @@ resource "null_resource" "push_render_container_image" {
   # docker build -t us-central1-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.my_repo.name}/my-image:tag . &&
   # docker push us-central1-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.my_repo.name}/my-image:tag
 
-  provisioner "local-exec" {
-    command = <<EOT
-docker push ${local.render_service_image_name}
-EOT
+  triggers = {
+    always_run = timestamp()
+  }
 
+  provisioner "local-exec" {
+
+    command = <<EOT
+docker push ${local.render_service_image_name} ${local.render_service_image_name_and_tag}
+EOT
   }
 
   depends_on = [ google_artifact_registry_repository.container_registry ]

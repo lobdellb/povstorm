@@ -10,14 +10,20 @@ import subprocess
 import glob
 import shutil
 
+import utils  # doesn't work yet
+
+import models
+
 # Imports the Cloud Logging client library
 import google.cloud.logging
 
 
-GCP_PROJECT = os.environment["GCP_PROJECT"]
+
+config = models.Configuration()
+
 
 # Instantiates a client
-client = google.cloud.logging.Client(project=GCP_PROJECT)
+client = google.cloud.logging.Client(project=config.GCP_PROJECT)
 
 # Retrieves a Cloud Logging handler based on the environment
 # you're running in and integrates the handler with the
@@ -27,7 +33,16 @@ client.setup_logging()
 
 import logging
 
-gcs_client = storage.Client( project="terraform_play_2" )
+gcs_client = storage.Client( project=config.GCP_PROJECT )
+
+
+# Next things to do:
+# - move models to the module
+# - move utils to the module
+# - pip install the module into this container
+# - chop up the functions into testable functions
+# - write tests
+
 
 
 app = Flask(__name__)
@@ -71,11 +86,33 @@ def run_binary(cmd,cwd):
     #     # return None, e.stderr
 
 
+@app.route("/health", methods=["GET"])
+def health():
+    return "Chuffed!", 200
+
+
+# Inbound parameters 
+# - GCS content shared - This will be fetched from GCS and loaded into the local FS just once.
+# - GCS content bespoke - This will be fetched from GCS and loaded into the local FS each time.
+# - Inline content - A JSON doc which contains files specific to this run.
+# - Command to run
+# - Local filename to offload
+# - Offload GCS path
+# - WorkUnit ID
+
+# doc = {
+#     "shared_gcs_content": ...,
+#     "bespoke_gcs_content":...,
+#     "inline_content": { "fn1": <base64encoded data>, "fn2": <base64encoded data> , ... }
+#     "cmd": ..., 
+#     "local_result_fns": ["fn1","fn2",...],
+#     "offload_gcs_path": ...
+# }
 
 
 
-@app.route("/", methods=["POST"])
-def index():
+@app.route("/process_workunit", methods=["POST"])
+def process_workunit():
 
     logging.info( "starting message handling")
     
@@ -91,115 +128,55 @@ def index():
         return f"Bad Request: {msg}", 400
 
     pubsub_message = envelope["message"]
+    data = pubsub_message["data"].decode("utf-8")
 
-    name = "World"
-    if isinstance(pubsub_message, dict) and "data" in pubsub_message:
-        name = base64.b64decode(pubsub_message["data"]).decode("utf-8").strip()
+    work_unit = models.WorkUnit.parse_raw( data )
 
-
-    # print( envelope )
-    # print(f"Hello Bryce!")
-
-    doc = json.loads( base64.b64decode(pubsub_message["data"]).decode("utf-8").strip() )
+    # name = "World"
+    # if isinstance(pubsub_message, dict) and "data" in pubsub_message:
+    #     name = base64.b64decode(pubsub_message["data"]).decode("utf-8").strip()
 
     logging.info( f"type of doc is {type(doc)}")
     logging.info( f"povray_runner_doc: {doc}")
 
-    # {
-    #     "output_fn": "frame_0506.png",
-    #     "pov_cmd": "povray earth_moon.pov Output_File_Name=frame_0506.png",
-    #     "before_inc_content": "\n    #declare earth_rotate_angle = 0.0;\n    ",
-    #     "after_inc_content": "\nsphere {\n\t<15376.0, 0.0, 0.0>, moon_radius_km\n\ttexture {\n\t  pigment { \n\t  \t// color LightBlue\n        \n        //image_map {\n\t    //    png \"moon.png\" // one of the accepted file formats\n\t    //    map_type 1 // this is spherical wrapping\n\t    //}\n        \n        color Gray\n\t  }\n\t}\n\n\tfinish {\n\t  ambient rgb <0.35,0.35,0.35>\n\t}\n}\n",
-    #     "package_gcs_uri": "gs://brycelobdell-terraform-play2-povray/earth_moon_source.tgz"
-    #     package_gcs_bucket = "brycelobdell-terraform-play2-povray"
-    # package_gcs_prefix = "earth_moon_source.tgz"
-    # }
 
-    # {
-        # 'output_fn': 'frame_0506.png', 
-        # 'pov_cmd': 'povray earth_moon.pov Output_File_Name=frame_0506.png', 
-        # 'before_inc_content': '\n    #declare earth_rotate_angle = 0.0;\n    ', 'after_inc_content': '\nsphere {\n\t<15376.0, 0.0, 0.0>, moon_radius_km\n\ttexture {\n\t  pigment { \n\t  \t// color LightBlue\n        \n        //image_map {\n\t    //    png "moon.png" // one of the accepted file formats\n\t    //    map_type 1 // this is spherical wrapping\n\t    //}\n        \n        color Gray\n\t  }\n\t}\n\n\tfinish {\n\t  ambient rgb <0.35,0.35,0.35>\n\t}\n}\n', 
-        # 'package_gcs_uri': 'gs://brycelobdell-terraform-play2-povray/earth_moon_source.tgz'}
+    # Steps
+    # 0) Create a private/temp path in the local filesystem for doing everything for this WorkUnit.
+    # 1) Softlink the shared resources from GCS into the temporary path for the WorkUnit.
+    # 2) Softlink the output path from GCS into the temporary path for the WorkUnit.
+    # 3) Go through the inline_resource dictionary and drop those files into the workspace directory.
+    # 4) Run the povray (or other) command.
+    # 5) Drop the work files.
 
+    # (0)
+    workspace_path = f"./workunit-{work_unit.job_id}-{work_unit.work_unit_id}/"
 
-	# fetch the package, unless it already exists
+    shared_resource_local_path = os.path.join( config.MOUNT_PATH, work_unit.bespoke_resource_gcs_prefix )
 
-    if not os.path.isfile( "earth_moon/moon.png" ):
+    # (1) 
+    os.symlink( work_unit.shared_resource_gcs_prefix, os.path.join( workspace_path, "shared" ) )
 
-        logging.info("loading the pov source package into the fs")
+    # (2)
+    os.symlink( work_unit.offload_gcs_prefix, os.path.join( workspace_path, "output" ) )
 
-        package_fn = "package.tgz"
+    # (3)
+    for resource_fn in work_unit.inline_resource:
+        with open( resource_fn, "wb" ) as fp:
+            fp.write( base64.b64decode( work_unit.inline_resource[ resource_fn ] ) )
 
-        bucket = gcs_client.bucket( doc["package_gcs_bucket"] )
-        blob = bucket.blob( doc["package_gcs_prefix"] )
-        blob.download_to_filename( package_fn )
+    # (4)
+    # This should/must be configured to drop the result outputs in 
+    stdout, stderr, returncode = run_binary( cmd=work_unit.cmd , cwd=workspace_path )
 
-        # stdout,stderr,retval = run_binary( ["find", package_fn ], cwd=os.getcwd() )
-
-        stdout,stderr,retval = run_binary( ["tar","-zxf", package_fn ], cwd=os.getcwd() )
-
-        os.remove( package_fn )
-
+    if not returncode == 0:
+        raise Exception(f"povstorm:process_workunit:call to cmd: failed with error code --{returncode}--, stderr --{stderr}--, and stdout --{stdout}--.")
+    else:
+        logging.info( f"povstorm:process_workunit:call to cmd: suceeded with stderr --{stderr}--, and stdout --{stdout}--." )
 
 
-        logging.info( f"cwd is {os.getcwd()}" )
-        logging.info( "listing all files" )
+    # (5)
+    utils.remove_recursively( workspace_path )
 
-
-        # ll_files is ['main.py', 'povray.tgz', 'requirements.txt', 'earth_moon', 'earth_moon/moon.png', 'earth_moon/1920px-Lambert_cylindrical_equal-area_projection_SW.jpg', 'earth_moon/earth_moon.pov', '__pycache__', '__pycache__/main.cpython-312.pyc']
-        all_files = list( filter( lambda s : not s.startswith("povray-3.7.0.10" ) ,  glob.glob("**",recursive=True ) ) )
-
-        logging.info( type( all_files ) )
-        logging.info( f"all_files is {list( all_files )}" )
-        logging.info( "done listing files" )
-
-
-    # run povray
-
-    povray_cwd = os.getcwd() + "/earth_moon/"
-
-    # with open( "earth_moon/before_include.inc", "w" ) as fp_before_inc:
-    #     fp_before_inc.write( doc["before_inc_content"] )
-
-    # with open( "earth_moon/after_include.inc", "w" ) as fp_after_inc:
-    #     fp_after_inc.write( doc["after_inc_content"] )
-
-    # stdout, stderr, retval = run_binary(cmd=["find"],cwd=povray_cwd)
-
-    # logging.info( f"stdout for find was --{stdout}--")
-    # logging.info( f"stder for find was --{stderr}--")
-
-
-    if os.path.isfile( "earth_moon/" + doc["scene_fn"] ):
-        os.remove( "earth_moon/" + doc["scene_fn"]  )
-
-    with open( "earth_moon/" + doc["scene_fn"], "w" ) as fp_scene: 
-        fp_scene.write( doc["scene_content"] )
-
-
-    logging.info( f"povray command was --{doc["pov_cmd"]}--")
-
-    if os.path.isfile( povray_cwd  +  doc["output_fn"] ):
-        os.remove( povray_cwd  +  doc["output_fn"]  )
-
-    stdout, stderr, retval = run_binary(cmd=doc["pov_cmd"],cwd=povray_cwd)
-
-    logging.info( f"stdout for povray was --{stdout}--")
-    logging.info( f"stder for povray was --{stderr}--")
-
-
-    bucket = gcs_client.bucket( doc["package_gcs_bucket"] )
-
-    blob = bucket.blob( doc["target_gcs_prefix"] + "/" +  doc["scene_fn"] )
-    blob.upload_from_filename("earth_moon/" + doc["scene_fn"] )
-
-    blob = bucket.blob( doc["target_gcs_prefix"] + "/" +  doc["output_fn"] )
-    blob.upload_from_filename(povray_cwd  +  doc["output_fn"] )
-
-
-
-    os.remove( povray_cwd  +  doc["output_fn"]  )
-    os.remove( "earth_moon/" + doc["scene_fn"] )
 
     logging.info("finished")
 

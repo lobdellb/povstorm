@@ -3,3 +3,4 @@ google-cloud-pubsub
 google-cloud-storage
 gunicorn
 google-cloud-logging
+pydantic

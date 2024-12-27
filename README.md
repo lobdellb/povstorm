@@ -69,5 +69,21 @@ Render POVRAY SDL to  images, then video in GCP Cloud Run.
     * target_gcp_region
 * google_artifact_registry_docker_image
     * target_gcp_region
+    * 
+
+  location      = var.target_gcp_region
+  repository_id = google_artifact_registry_repository.container_registry.repository_id
+  image_name = var.render_service_docker_tag
+  project = var.target_gcp_project_id
+
+
+for the artifact registery I need
+
+* var.target_gcp_region
+* repository_id
+* project = var.target_gcp_project_id
+* image_name 
+
+
 
 *google_artifact_registry_docker_image

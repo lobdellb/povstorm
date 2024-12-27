@@ -19,6 +19,10 @@ env
 local_env
 this_env
 
+
+latest_render_container_hash
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
