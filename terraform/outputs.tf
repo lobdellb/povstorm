@@ -20,3 +20,8 @@ output "repository_id" {
 output "render_service_image_name" {
   value = module.povstorm.render_service_image_name
 }
+
+
+output "blah" { 
+  value = module.povstorm.blah
+}

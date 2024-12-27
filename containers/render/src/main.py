@@ -178,6 +178,10 @@ def process_workunit():
     utils.remove_recursively( workspace_path )
 
 
+
+
+
+
     logging.info("finished")
 
     return ( "povray_runner_doc: " , 204)

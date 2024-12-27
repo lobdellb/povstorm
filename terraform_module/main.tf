@@ -21,7 +21,7 @@ locals {
 
   mount_name = "work-bucket"
 
-  render_service_tag = formatdate("YYYYMMDDhhmmdd")
+  render_service_tag = formatdate("YYYYMMDDhhmmDD", timestamp() )
 
   render_service_image_name_and_tag = "${local.render_service_image_name}:${local.render_service_tag}"
 }
@@ -55,7 +55,9 @@ resource "google_pubsub_topic" "outbound_topic" {
 
 
 
-
+output "blah" {
+  value = "${local.render_service_image_name}" # :${data.local_file.latest_render_container_hash.content}"
+}
 
 
 # Cloud run service for rendering
@@ -81,7 +83,10 @@ resource "google_cloud_run_v2_service" "render_service" {
     max_instance_request_concurrency = 2 # default to 80. Might be faster with 1 or 4, not sure.
 
     containers {
-      image = local.render_service_image_name
+      
+      image = "${local.render_service_image_name}@${trim(data.local_file.latest_render_container_hash.content,"\n")}"
+      #image = "us-central1-docker.pkg.dev/terraform-play-2/blobdell-povstorm-repository/render@sha256:8b5a8f9608f48c5a6f32ca0aa6047c6b7387b1ca24c9089aa49310e9a28b6390"
+
       resources {
         limits = {
           cpu    = var.render_service_cpus
@@ -127,7 +132,7 @@ resource "google_cloud_run_v2_service" "render_service" {
 
   labels = local.all_labels
 
-  depends_on = [ null_resource.push_render_container_image ]
+  #depends_on = [ null_resource.push_render_container_image ]
 
 }
 
@@ -256,33 +261,50 @@ resource "google_eventarc_trigger" "inbound_trigger" {
 
 
 
-data "terraform_local_file" "my_file" {
+data "local_file" "latest_render_container_hash" {
   filename = "../latest_render_container_hash" 
 }
 
 
 
 
-# will need:  gcloud auth configure-docker us-central1-docker.pkg.dev
-resource "null_resource" "push_render_container_image" {
+# data "external" "latest_image_digest" {
+#   program = ["bash", "-c", <<EOT
+#     gcloud artifacts docker images list ${local.render_service_image_name} \
+#       --limit=1 \
+#       --sort-by=CREATE_TIME \
+#       --format=json
+# EOT
+#   ]
+# }
 
-  # must already be done by the person running terraform apply: gcloud auth configure-docker us-central1-docker.pkg.dev &&
-  # docker build -t us-central1-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.my_repo.name}/my-image:tag . &&
-  # docker push us-central1-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.my_repo.name}/my-image:tag
 
-  triggers = {
-    always_run = timestamp()
-  }
 
-  provisioner "local-exec" {
+# output "blah" {
+#   value = data.external.latest_image_digest.result
+# }
 
-    command = <<EOT
-docker push ${local.render_service_image_name} ${local.render_service_image_name_and_tag}
-EOT
-  }
 
-  depends_on = [ google_artifact_registry_repository.container_registry ]
-}
+# # will need:  gcloud auth configure-docker us-central1-docker.pkg.dev
+# resource "null_resource" "push_render_container_image" {
+
+#   # must already be done by the person running terraform apply: gcloud auth configure-docker us-central1-docker.pkg.dev &&
+#   # docker build -t us-central1-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.my_repo.name}/my-image:tag . &&
+#   # docker push us-central1-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.my_repo.name}/my-image:tag
+
+#   triggers = {
+#     always_run = timestamp()
+#   }
+
+#   provisioner "local-exec" {
+
+#     command = <<EOT
+# docker push ${local.render_service_image_name} ${local.render_service_image_name_and_tag}
+# EOT
+#   }
+
+#   depends_on = [ google_artifact_registry_repository.container_registry ]
+# }
 
 
 

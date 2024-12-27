@@ -45,13 +45,19 @@ build_tag_render_service: create_python_env
 	#. ./this_env && docker inspect --format='{{index .RepoDigests 0}}' $${TF_VAR_target_gcp_region}-docker.pkg.dev/$${TF_VAR_target_gcp_project_id}/$${TF_VAR_povstorm_namespace}-repository/$${TF_VAR_render_service_docker_tag_postfix} > latest_render_container_hash
 	#. ./this_env && docker push $${TF_VAR_target_gcp_region}-docker.pkg.dev/$${TF_VAR_target_gcp_project_id}/$${TF_VAR_povstorm_namespace}/$${TF_VAR_render_service_docker_tag_postfix}:latest 
 
+push_render_service: build_tag_render_service
+	echo "Push the render service container to GCP artifact registery..."
+	. ${ENV_NAME}/bin/activate; python -c "from src.utils import tfvars_to_env;tfvars_to_env('./terraform/blobdell-povstorm.tfvars')" > this_env
+	. ./this_env && docker push $${TF_VAR_target_gcp_region}-docker.pkg.dev/$${TF_VAR_target_gcp_project_id}/$${TF_VAR_povstorm_namespace}-repository/$${TF_VAR_render_service_docker_tag_postfix}
+	. ./this_env && gcloud container images list-tags $${TF_VAR_target_gcp_region}-docker.pkg.dev/$${TF_VAR_target_gcp_project_id}/$${TF_VAR_povstorm_namespace}-repository/$${TF_VAR_render_service_docker_tag_postfix} --limit=1 --format="get(digest)" > latest_render_container_hash
 
-terraform_plan: build_tag_render_service
+
+terraform_plan: push_render_service
 	echo "Running Terraform plan..."
 	terraform -chdir="./terraform" plan -var-file="blobdell-povstorm.tfvars"
 
 
-terraform_apply: build_tag_render_service
+terraform_apply: push_render_service
 	echo "Running Terraform apply..."
 	terraform -chdir="./terraform" apply -var-file="blobdell-povstorm.tfvars"
 
