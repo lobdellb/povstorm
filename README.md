@@ -1,4 +1,8 @@
 
+# povstorm
+
+When I was a kid exploring the wonderful land of "Electronic Bullitin Boards" (BBSs) I found a raytracing program called POVRAY which consumed a computer code-like description of a scene composed of cameras, light sources, shape primatives, textures, and so-on which it would convert to an image.  I recently re-discovered this tool and started to play with it again, quite enjoyably.  When I first used POVRAY it would take a day or more to render what was then a high-resolution image (640x480 pixels), but now images ten times as large can be done in seconds or minutes so I thought "wouldn't it be fun to render some videos" which again take a bit of time for a video of a few thousand frames or a duration of a few minutes.  Before long I thought "I could iterate a lot faster if I would render the frames of the video concurrently in the cloud. The repository contains the code and tooling I've used to automate that process.
+
 # 
 
 
@@ -87,3 +91,35 @@ for the artifact registery I need
 
 
 *google_artifact_registry_docker_image
+
+
+
+
+# To run this you need
+
+* Python 3.12 (will probably work on other versions, but needs tested).
+* Docker
+* `jq`
+* gnu Make
+* terraform
+
+
+# How to configure and use
+
+* Set up your python enviornment 
+* Install docker
+* Edit `./terraform/blobdell-povstorm.tfvars`
+* run `make ...` to stand up the infra, build containers, etc.
+* edit or copy the contents of `./example_client/` to do your bidding
+* run `python ./example_client/run.py`
+* collect the result images and/or video from GCS
+* take down the infrastructure with `make terraform_destory`
+
+
+# List of files which are created in the local filesystem and what they do.
+
+* Python envs
+* env 
+* TF files (plan and output)
+* The whl file for the client.
+* latest_render_container_hash

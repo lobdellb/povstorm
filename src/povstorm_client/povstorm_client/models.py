@@ -14,7 +14,7 @@ import pydantic_settings
 
 class WorkUnit(pydantic.BaseModel):
 
-    shared_resource_gcs_prefix: str = pydantic.Field(description="Location in GCS of the shared resource, which is a single zip file.",regex="^gs:\/\/([a-zA-Z0-9\-._]+)\/(.+)$")
+    shared_resource_gcs_prefix: str = pydantic.Field(description="Location in GCS of the shared resources, which can include numerous files which are not flat in the OS.",regex="^gs:\/\/([a-zA-Z0-9\-._]+)\/(.+)$")
     #bespoke_resource_gcs_prefix: str = pydantic.Field(description="Prefix in the GCS bucket of the bespoke resource, which is a single zip file.",regex="^gs:\/\/([a-zA-Z0-9\-._]+)\/(.+)$")
     inline_resource: Dict[str,str] = pydantic.Field(description="A dictionary of keys corresponding to local filenames with values containing the file content.")
     cmd: str = pydantic.Field(description="The POVRAY (or other) command to run.")

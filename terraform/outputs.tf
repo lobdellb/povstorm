@@ -21,7 +21,17 @@ output "render_service_image_name" {
   value = module.povstorm.render_service_image_name
 }
 
-
-output "blah" { 
-  value = module.povstorm.blah
+output "inbound_topic_id" {
+  value = module.povstorm.inbound_topic_id
 }
+
+output "work_bucket_name" {
+  value = module.povstorm.work_bucket_name
+}
+
+
+
+
+# Outputs I need to configure the cluster object
+# - The name of the bucket.
+# - Inbound topic ID

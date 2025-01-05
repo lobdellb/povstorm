@@ -10,6 +10,8 @@
 *.tar.gz
 *.zip
 *.whl
+*.json
+*.tfplan
 
 */.terraform/*
 .terraform*

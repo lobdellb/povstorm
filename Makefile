@@ -59,25 +59,23 @@ push_render_service: build_tag_render_service
 
 terraform_plan: push_render_service
 	echo "Running Terraform plan..."
-	terraform -chdir="./terraform" plan -var-file="blobdell-povstorm.tfvars"
+	terraform -chdir="./terraform" plan -var-file="blobdell-povstorm.tfvars" -out=plan.tfplan
 
 
 terraform_apply: push_render_service
-	echo "Running Terraform apply..."
-	terraform -chdir="./terraform" apply -var-file="blobdell-povstorm.tfvars"
+	echo "Running Terraform apply (to stand up infra) ..."
+	terraform -chdir="./terraform" apply -json -var-file="blobdell-povstorm.tfvars" plan.tfplan  | tee tf_outputs.json | jq .
+	#terraform apply ./terraform/plan.tfplan # | tee tf_outputs.json | jq .
 
 terraform_destroy:
-	echo "Running Terraform apply..."
+	echo "Running Terraform destory (to take down infra) ..."
 	terraform -chdir="./terraform" destroy -var-file="blobdell-povstorm.tfvars"
-
-client:
-	echo "Building the Python client..."
 
 
 clean:
-	find -name \*.whl -not -path "./${ENV_NAME}/*" -exec echo rm {} \;
-	find -name \*.tgz -not -path "./${ENV_NAME}/*" -exec echo rm {} \;
-	find -name \*.tar.gz -not -path "./${ENV_NAME}/*" -exec echo rm {} \;
+	find -name \*.whl -not -path "./${ENV_NAME}/*" -exec rm {} \;
+	find -name \*.tgz -not -path "./${ENV_NAME}/*" -exec rm {} \;
+	find -name \*.tar.gz -not -path "./${ENV_NAME}/*" -exec rm {} \;
 
 create_example_python_env:
 	if [ ! -f ${EXAMPLE_ENV}/bin/activate ]; then python -m venv ${EXAMPLE_ENV}; fi
@@ -90,7 +88,12 @@ run_example: terraform_apply package_client create_example_python_env
 
 
 
+# I should possibly create files name ?.o as a way of clocking which work has been already done, and then delete those in the clean step.
 
-
-
+# Todo:
+# - Figure out how to deal with the python package name issue, ie., we don't want a mega-long package name.
+# - Deal with the pip version issues
+# - Remove string "blobdell" from everything
+# - use .o files or something to deal with the re-running things issue
+# - Rename the create venv steps
 

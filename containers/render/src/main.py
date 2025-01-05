@@ -13,6 +13,7 @@ import shutil
 import utils  # doesn't work yet
 
 import povstorm_client.models as models
+import povstorm_client.utils as utils
 
 # Imports the Cloud Logging client library
 import google.cloud.logging
@@ -154,14 +155,17 @@ def process_workunit():
     shared_resource_local_path = os.path.join( config.MOUNT_PATH, work_unit.bespoke_resource_gcs_prefix )
 
     # (1) 
-    os.symlink( work_unit.shared_resource_gcs_prefix, os.path.join( workspace_path, "shared" ) )
+    os.symlink( shared_resource_local_path, os.path.join( workspace_path, "shared" ) )
 
     # (2)
     os.symlink( work_unit.offload_gcs_prefix, os.path.join( workspace_path, "output" ) )
 
     # (3)
     for resource_fn in work_unit.inline_resource:
-        with open( resource_fn, "wb" ) as fp:
+
+        resource_local_fn = os.path.join( workspace_path , resource_fn )
+
+        with open( resource_local_fn, "wb" ) as fp:
             fp.write( base64.b64decode( work_unit.inline_resource[ resource_fn ] ) )
 
     # (4)

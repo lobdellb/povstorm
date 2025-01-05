@@ -21,9 +21,6 @@ locals {
 
   mount_name = "work-bucket"
 
-  render_service_tag = formatdate("YYYYMMDDhhmmDD", timestamp() )
-
-  render_service_image_name_and_tag = "${local.render_service_image_name}:${local.render_service_tag}"
 }
 
 
@@ -42,7 +39,8 @@ resource "google_pubsub_topic" "inbound_topic" {
 
 
 # PubSub for images which have been rendered
-
+# I don't think we'll end up using this.  I had planned to use it to figure out when all the work was done, 
+# but I don't think this is how I'm going to do it.
 resource "google_pubsub_topic" "outbound_topic" {
   name = "${var.povstorm_namespace}-outbound-topic"
   project = var.target_gcp_project_id
@@ -53,11 +51,6 @@ resource "google_pubsub_topic" "outbound_topic" {
 }
 
 
-
-
-output "blah" {
-  value = "${local.render_service_image_name}" # :${data.local_file.latest_render_container_hash.content}"
-}
 
 
 # Cloud run service for rendering

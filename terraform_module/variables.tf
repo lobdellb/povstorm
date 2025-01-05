@@ -19,7 +19,6 @@ variable "target_gcp_region" {
 variable "povstorm_namespace" {
   description = "All GCP resource IDs are prefixed with this string."
   type    = string
-  default = "my-povstorm"
 }
 
 

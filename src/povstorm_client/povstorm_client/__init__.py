@@ -40,7 +40,7 @@ logger = logging.get_logger()
 
 class Cluster():
 
-    def __init__(self, gcp_project: str, namespace: str ):
+    def __init__(self, tf_outputs_fn: str ):
         self.gcp_project = gcp_project
         self.namespace = namespace
 
@@ -52,9 +52,6 @@ class Cluster():
 
         # upload the shared resources
         job_obj.shared_resource.upload()
-
-
-        for w in 
 
 
 
@@ -77,50 +74,44 @@ class Job():
 
 
 
-class SharedResource():
+# class SharedResource():
 
-    def __init__(self, local_path: str ):
-        self.local_path = local_path
+#     def __init__(self, local_path: str ):
+#         self.local_path = local_path
 
-    def upload( gcs_bucket:str, gcs_prefix:str ):
+#     def upload( gcs_bucket:str, gcs_prefix:str ):
 
-        gcs_client = storage.Client()
+#         gcs_client = storage.Client()
 
-        bucket_obj = storage.get_bucket( gcs_bucket )
+#         bucket_obj = storage.get_bucket( gcs_bucket )
 
-        local_path += "/" if local_path[-1] != "/" else ""
-        gcs_prefix += "/" if gcp_prefix[-1] != "/" else ""
+#         local_path += "/" if local_path[-1] != "/" else ""
+#         gcs_prefix += "/" if gcp_prefix[-1] != "/" else ""
 
-        for f in glob.glob( self.local_path + "**", recursive=True ):
+#         for f in glob.glob( self.local_path + "**", recursive=True ):
 
-            postfix = f.replace( self.local_path, "" )
+#             postfix = f.replace( self.local_path, "" )
 
-            blob_obj = bucket_obj.blob( gcs_prefix + postfix )
-            blob_obj.upload_from_file( f )
-
-
+#             blob_obj = bucket_obj.blob( gcs_prefix + postfix )
+#             blob_obj.upload_from_file( f )
 
 
 
-class BespokeResource():
-
-    def __init__(self, generator ):
-
-        self.generator = generator
-        self.count = 0
-
-    def wrapped_generator(self):
-
-        for d in self.generator:
-            yield d
-            self.count += 1
-
-    def get_generator(self):
-        return self.wrapped_generator
 
 
+# class BespokeResource():
 
-@dataclass
-class WorkUnit():
+#     def __init__(self, generator ):
 
-    pov_file: str 
+#         self.generator = generator
+#         self.count = 0
+
+#     def wrapped_generator(self):
+
+#         for d in self.generator:
+#             yield d
+#             self.count += 1
+
+#     def get_generator(self):
+#         return self.wrapped_generator
+

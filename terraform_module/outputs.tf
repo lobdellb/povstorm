@@ -26,3 +26,12 @@ output "render_service_image_name" {
   value = local.render_service_image_name
 }
 
+
+output "inbound_topic_id" {
+  value = google_pubsub_topic.inbound_topic.id
+}
+
+
+output "work_bucket_name" {
+  value = google_storage_bucket.work_bucket.name
+}
