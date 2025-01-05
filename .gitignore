@@ -9,16 +9,14 @@
 *.tgz
 *.tar.gz
 *.zip
-
+*.whl
 
 */.terraform/*
 .terraform*
-env
 *blobdell*
 *tfstate*
-local_env
-this_env
-
+*_env
+env
 
 latest_render_container_hash
 

@@ -12,7 +12,7 @@ import shutil
 
 import utils  # doesn't work yet
 
-import models
+import povstorm_client.models as models
 
 # Imports the Cloud Logging client library
 import google.cloud.logging

@@ -25,8 +25,9 @@ RUN make
 
 RUN make install
 
-
 WORKDIR /app/
+
+RUN rm povray.tgz
 
 
 COPY requirements.txt ./
@@ -34,5 +35,14 @@ COPY requirements.txt ./
 RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
 COPY ./src/* ./
+COPY ./povstorm_client-0.1.0-py3-none-any.whl .
+
+RUN pip install /app/povstorm_client-0.1.0-py3-none-any.whl --break-system-packages
+RUN rm /app/povstorm_client-0.1.0-py3-none-any.whl 
+
+#RUN find . | grep -v "povray-3.7.0.10"
+
+#RUN pip3 install --no-cache-dir --break-system-packages ./povstorm_client
+
 
 CMD exec gunicorn --bind :8080 --workers 1 --threads 8 --timeout 0 main:app
