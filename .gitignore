@@ -9,7 +9,18 @@
 *.tgz
 *.tar.gz
 *.zip
+*.whl
+*.json
+*.tfplan
 
+*/.terraform/*
+.terraform*
+*blobdell*
+*tfstate*
+*_env
+env
+
+latest_render_container_hash
 
 
 # Byte-compiled / optimized / DLL files

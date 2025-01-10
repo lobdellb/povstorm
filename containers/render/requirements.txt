@@ -1,5 +1,6 @@
-flask
-google-cloud-pubsub
-google-cloud-storage
-gunicorn
-google-cloud-logging
+flask>=3.1
+google-cloud-pubsub>=2.27
+google-cloud-storage>=2.19
+gunicorn>=23.0
+google-cloud-logging>=3.11
+pydantic>=2.10
