@@ -1,0 +1,105 @@
+// ***********************************************************
+// Persistence Of Vision Ray Tracer Scene Description File
+// File name  : sample.pov
+// Version    : 3.7
+// Description: 
+// Date       : 2025-01-12
+// Author     : Bryce Lobdell
+// ***********************************************************
+#version 3.7;
+
+// *** standard includes ***
+#include "colors.inc"
+#include "textures.inc"
+#include "functions.inc"
+#include "rad_def.inc"
+
+
+// sky_sphere {
+//         pigment {
+//                 crackle
+//                 color_map {
+//                         [pow(0.5, D) color Black]
+//                         [pow(0.6, D) color White*10]
+//                 }
+//                 scale .0005/D
+//         }
+// }
+
+
+
+camera {
+   location < 3, -4,-15 >
+   up y
+   right -x*image_width/image_height
+   angle 60
+   // sky <0,0,1>
+   look_at <0,0,0>
+}   
+
+
+
+light_source { 8, 8, 0 > color White}
+
+
+sphere {
+    <0, 0, 0>, 1.0
+
+    
+    texture {
+      pigment { 
+        color rgb <0.3,0.3,1.0> 
+
+      }
+
+      rotate <0, 0 , 0>
+    }
+
+    finish {
+      ambient rgb <0.5,0.5,0.5>
+    }
+}
+
+
+
+
+
+
+sphere {
+  <0, 1, 0>, 0.25
+  texture {
+    pigment { 
+      color Green 
+    }
+  }
+
+  finish {
+    ambient rgb <0.5,0.5,0.5>
+  }
+}
+
+sphere {
+  <1, 0, 0>, 0.25
+  texture {
+    pigment { 
+      color Red 
+    }
+  }
+
+  finish {
+    ambient rgb <0.5,0.5,0.5>
+  }
+}
+
+sphere {
+  <0, 0, 1>, 0.25
+  texture {
+    pigment { 
+      color LightBlue 
+    }
+  }
+
+  finish {
+    ambient rgb <0.5,0.5,0.5>
+  }
+}

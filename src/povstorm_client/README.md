@@ -32,3 +32,9 @@ The idea is to make a tidy way to package all the resources needed to render a f
 
 
 
+# Work diary
+
+* Jan 19 - Working on setting up an example job which I can use to test the full workflow.
+    * Drafting the example job
+    * Editing the client and job to make sure they match.
+    * Writing tests for the client.

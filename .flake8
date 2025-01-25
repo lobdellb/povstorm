@@ -1,0 +1,9 @@
+[flake8]
+# Ignore the specific violation "BITCH"
+ignore = E501
+max-line-length = 88
+exclude = 
+    .git,
+    __pycache__,
+    build,
+    dist

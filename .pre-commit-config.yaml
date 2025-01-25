@@ -1,0 +1,84 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.10.0  # Replace with the latest version
+    hooks:
+      - id: black
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.1.1  # Replace with the latest version
+    hooks:
+      - id: flake8
+
+  # - repo: https://github.com/pre-commit/mirrors-isort
+  #   rev: v5.10.1  # Replace with the latest version
+  #   hooks:
+  #     - id: isort
+
+  # Not the best:
+  # - repo: https://github.com/pre-commit/pygrep-hooks
+  #   rev: v1.10.0  # Replace with the latest version
+  #   hooks:
+  #     - id: detect-large-files
+  #       args: ["--maxkb=500"]  # Set the max file size (in KB) to check
+
+  # Different rendering:
+  # - repo: https://github.com/trufflesecurity/trufflehog
+  #   rev: v3.27.0  # Replace with the latest version
+  #   hooks:
+  #     - id: trufflehog
+  #       args: ["--entropy-sensitivity", "5", "--regex"]
+  
+  # - repo: local
+  #   hooks:
+  #     - id: trufflehog
+  #       name: TruffleHog
+  #       description: Detect secrets in your data.
+  #       entry: bash -c 'trufflehog git file://. --since-commit HEAD --no-verification --fail'
+  #       language: system
+  #       stages: ["commit", "push"]
+
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0  # Replace with the latest version
+    hooks:
+      - id: check-json
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-toml
+
+# -   id: check-added-large-files
+#     name: check for added large files
+#     description: prevents giant files from being committed.
+#     entry: check-added-large-files
+#     language: python
+#     stages: [pre-commit, pre-push, manual]
+#     minimum_pre_commit_version: 3.2.0
+
+
+# Duplicative with black
+# -   id: check-ast
+#     name: check python ast
+#     description: simply checks whether the files parse as valid python.
+#     entry: check-ast
+#     language: python
+#     types: [python]
+
+# -   id: check-toml
+#     name: check toml
+#     description: checks toml files for parseable syntax.
+#     entry: check-toml
+#     language: python
+#     types: [toml]
+
+#   - repo: local
+#     hooks:
+#       - id: pytest
+#         name: pytest
+#         entry: pytest
+#         language: system
+#         types: [python]
+
+
+
+
+

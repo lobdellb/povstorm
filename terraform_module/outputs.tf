@@ -35,3 +35,12 @@ output "inbound_topic_id" {
 output "work_bucket_name" {
   value = google_storage_bucket.work_bucket.name
 }
+
+
+output "target_gcp_project_id" {
+  value = var.target_gcp_project_id
+}
+
+output "povstorm_namespace" {
+  value = var.povstorm_namespace
+}

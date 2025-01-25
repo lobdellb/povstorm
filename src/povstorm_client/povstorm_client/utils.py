@@ -1,3 +1,5 @@
+import os
+
 
 def remove_recursively(path):
     """Recursively removes files from a directory, ignoring symlinks."""
@@ -8,4 +10,4 @@ def remove_recursively(path):
         elif entry.is_file():
             os.remove(entry.path)
         elif entry.is_dir():
-            remove_files_recursively(entry.path)
+            remove_recursively(entry.path)

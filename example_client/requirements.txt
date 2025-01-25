@@ -1,2 +1,0 @@
-src/povstorm_client/dist/povstorm_client-0.1.0-py3-none-any.whl
-Jinja2>=3.1

@@ -38,8 +38,15 @@ create_python_env:
 	if [ ! -f ${ENV_NAME}/bin/activate ]; then python -m venv ${ENV_NAME}; fi
 	. ${ENV_NAME}/bin/activate; pip install -r requirements.txt
 
+update_python_env:
+	. ${ENV_NAME}/bin/activate; pip install -r requirements.txt
+
+
 package_client:
 	. ${ENV_NAME}/bin/activate; cd src/povstorm_client; poetry build
+
+run_precommit:
+	. ${ENV_NAME}/bin/activate; pre-commit run --all-files
 
 
 build_tag_render_service: create_python_env package_client
@@ -79,13 +86,18 @@ clean:
 
 create_example_python_env:
 	if [ ! -f ${EXAMPLE_ENV}/bin/activate ]; then python -m venv ${EXAMPLE_ENV}; fi
-	. ${EXAMPLE_ENV}/bin/activate; pip install -r ./example_client/requirements.txt
+	. ${EXAMPLE_ENV}/bin/activate; pip install -r ./example_job/requirements.txt
 
-run_example: terraform_apply package_client create_example_python_env
+update_povstorm_client_for_example:
+	. ${EXAMPLE_ENV}/bin/activate; pip install --force-reinstall --no-deps src/povstorm_client/dist/povstorm_client-0.1.0.tar.gz
+
+run_example_job: terraform_apply package_client create_example_python_env update_povstorm_client_for_example
 	echo "Running example..."
+	. ${EXAMPLE_ENV}/bin/activate; python example_job/run.py
 
 
-
+just_run_example_job: package_client update_povstorm_client_for_example
+	. ${EXAMPLE_ENV}/bin/activate; cd example_job; python run.py
 
 
 # I should possibly create files name ?.o as a way of clocking which work has been already done, and then delete those in the clean step.

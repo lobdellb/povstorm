@@ -29,8 +29,13 @@ output "work_bucket_name" {
   value = module.povstorm.work_bucket_name
 }
 
+output "target_gcp_project_id" {
+  value = module.povstorm.target_gcp_project_id
+}
 
-
+output "povstorm_namespace" {
+  value = module.povstorm.povstorm_namespace
+}
 
 # Outputs I need to configure the cluster object
 # - The name of the bucket.
